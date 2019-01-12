@@ -20,7 +20,7 @@ class NewChocolate extends React.Component {
     render() {
         return (
             <View>
-                <Text style={{margin: 10, fontWeight: "bold", fontSize: 20}}>Chocolate </Text>
+                <Text style={styles.info}>Chocolate </Text>
                 <TextInput
                     style={{borderColor: 'gray', margin: 10, borderWidth: 1}}
                     onChangeText={(entry) => this.setState({entry})}
@@ -32,16 +32,8 @@ class NewChocolate extends React.Component {
                 <Button
                     onPress={() => this.handleSubmit()}
                     title="Done"
-                    titleStyle={{fontWeight: "700", color: "rgba(46, 49, 49, 1)"}}
-                    buttonStyle={{
-                        backgroundColor: "rgba(68, 108, 179, 1)",
-                        height: 45,
-                        borderColor: "rgba(46, 49, 49, 1)",
-                        borderWidth: 1,
-                        borderRadius: 5,
-                        margin: 5
-
-                    }}
+                    titleStyle={styles.titleBtn}
+                    buttonStyle={styles.btn}
                     containerStyle={{marginTop: 20}}
                 />
             </View>
@@ -58,7 +50,7 @@ class NewChocolate extends React.Component {
             userID = id
         })
         if (entry === '') {
-            Alert.alert("Empty field","Body for a chocolate cannot be empty")
+            Alert.alert("Empty field", "Body for a chocolate cannot be empty")
         } else {
             if (!this.entry) {
                 console.log("enstry body" + entry)
@@ -73,7 +65,10 @@ class NewChocolate extends React.Component {
                     body: JSON.stringify({
                         body: entry,
                         date: Date.now(),
-                        userId: userID
+                        userId: userID,
+                        imagePath: '/../images/choco.jpg',
+                        wasUpdated: 0,
+                        wasInserted: chocolate.wasInserted
                     }),
                 }).then(res => res.json()).then(
                     async (res) => {
@@ -265,4 +260,32 @@ class NewChocolate extends React.Component {
     }
 }
 
+const styles = StyleSheet.create({
+    buttonAdd: {
+        backgroundColor: "rgba(68, 108, 179, 1)",
+        height: 45,
+        borderColor: "rgba(46, 49, 49, 1)",
+        borderWidth: 1,
+        borderRadius: 5,
+        margin: 5
+    },
+    info: {
+        margin: 10,
+        fontWeight: "bold",
+        fontSize: 20
+    },
+    titleBtn: {
+        fontWeight: "700",
+        color: "rgba(46, 49, 49, 1)"
+    },
+    btn: {
+        backgroundColor: "rgba(68, 108, 179, 1)",
+        height: 45,
+        borderColor: "rgba(46, 49, 49, 1)",
+        borderWidth: 1,
+        borderRadius: 5,
+        margin: 5
+    }
+
+})
 export default NewChocolate;

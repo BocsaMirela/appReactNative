@@ -1,9 +1,10 @@
 import React from 'react';
-import {FlatList, View, AsyncStorage, Text, NetInfo, StyleSheet,Image} from 'react-native';
+import {FlatList, View, AsyncStorage, Text, NetInfo, StyleSheet, Image} from 'react-native';
 import {entryEndpoint} from './environment';
 // import ListItem from './ListItem';
 import Toast from 'react-native-simple-toast';
 import {Button, ListItem} from 'react-native-elements';
+import _ from "underscore";
 
 let MAIN_SCREEN;
 
@@ -37,7 +38,7 @@ class Home extends React.Component {
 
     async fetchEntriesByPage() {
         let that = this
-        if (this.more === false) return;
+        if (this.more == false) return;
         console.log("FETCHHHHHHH DOOOOOOOOO FUNTION")
         this.fetchWithTimeout(`${entryEndpoint}?page=${this.lastFetchedPage + 1}`, {
             method: 'GET', headers: new Headers({
@@ -71,9 +72,9 @@ class Home extends React.Component {
 
     componentDidMount() {
         console.log("didMount")
-        AsyncStorage.removeItem("@ChocolateApp:chocolateesInserted");
-        AsyncStorage.removeItem("@ChocolateApp:chocolateesUpdated");
-        AsyncStorage.removeItem("@ChocolateApp:chocolateesDeleted");
+        // AsyncStorage.removeItem("@ChocolateApp:chocolateesInserted");
+        // AsyncStorage.removeItem("@ChocolateApp:chocolateesUpdated");
+        // AsyncStorage.removeItem("@ChocolateApp:chocolateesDeleted");
         this.props.navigation.setParams({handleLogout: this.handleLogout});
         this.refresh();
     }
@@ -86,13 +87,6 @@ class Home extends React.Component {
         this.fetchEntriesByPage();
         if (this.state.more)
             this.fetchEntriesByPage();
-    }
-
-    componentWillUnmount() {
-    }
-
-    componentDidUpdate(prevProps, prevState, snapshot) {
-        console.log("FETCHHHHHHH UPDATEEEE")
     }
 
     handleNewEntry() {
@@ -110,18 +104,16 @@ class Home extends React.Component {
         console.log("inserted sync")
 
         let localNewData = []
-        let unInsertedData = []
-
-        AsyncStorage.getItem("@ChocolateApp:chocolateesInserted").then(function (res) {
+        AsyncStorage.getItem("@ChocolateApp:chocolatees").then(function (res) {
             localNewData = JSON.parse(res)
             console.log("Success inserted sync get data!");
         }).catch(function (err) {
             console.log("Failed to get items from AsyncStorage");
             console.log(err);
         });
+        localNewData = _.filter(localNewData, (p) => p.wasInserted == 0);
 
         console.log("inserted " + localNewData.length)
-
 
         localNewData.map((chocolate) => {
             console.log("add to server from local " + chocolate.body)
@@ -136,34 +128,32 @@ class Home extends React.Component {
                     id: chocolate.id,
                     body: chocolate.body,
                     date: chocolate.date,
-                    userId: chocolate.userId
+                    userId: chocolate.userId,
+                    imagePath: chocolate.imagePath,
+                    wasInserted: 1,
+                    wasUpdated: chocolate.wasUpdated
                 }),
             }).catch(function (err) {
-                unInsertedData.push(chocolate)
+
             });
         })
-        AsyncStorage.removeItem("@ChocolateApp:chocolateesInserted");
-        if (unInsertedData.length > 0) {
-            AsyncStorage.setItem("@ChocolateApp:chocolateesInserted", JSON.stringify(unInsertedData)).catch(function (err) {
-                console.log("Error on saving the chocolatees");
-                console.log(err);
-            })
-        }
-
     }
 
     async syncronizeDataUpdated() {
         console.log("update sync")
 
         let localNewData = []
-        let unUpdatingData = []
-        AsyncStorage.getItem("@ChocolateApp:chocolateesUpdated").then(function (res) {
+
+        AsyncStorage.getItem("@ChocolateApp:chocolatees").then(function (res) {
             localNewData = JSON.parse(res)
             console.log("Success updated sync get data!");
         }).catch(function (err) {
             console.log("Failed to get items from AsyncStorage");
             console.log(err);
         });
+
+        localNewData = _.filter(localNewData, (p) => p.wasUpdated == 0);
+
         console.log("updated " + localNewData.length)
 
         localNewData.map((chocolate) => {
@@ -179,19 +169,15 @@ class Home extends React.Component {
                     id: chocolate.id,
                     body: chocolate.body,
                     date: chocolate.date,
-                    userId: chocolate.userId
+                    userId: chocolate.userId,
+                    imagePath: chocolate.imagePath,
+                    wasUpdated: 0,
+                    wasInserted: chocolate.wasInserted
                 }),
             }).catch(function (err) {
-                unUpdatingData.push(chocolate)
+
             });
         })
-        AsyncStorage.removeItem("@ChocolateApp:chocolateesUpdated");
-        if (unUpdatingData.length > 0) {
-            AsyncStorage.setItem("@ChocolateApp:chocolateesUpdated", JSON.stringify(unUpdatingData)).catch(function (err) {
-                console.log("Error on update the chocolatees");
-                console.log(err);
-            })
-        }
     }
 
     async syncronizeDataDeleted() {
@@ -211,7 +197,7 @@ class Home extends React.Component {
 
         localNewData.map((chocolate) => {
             console.log("update to server from local " + chocolate.body())
-            fetch(`${entryEndpoint}/${chocolate.id}`, {
+            fetch(`${entryEndpoint}/${chocolate.id}/${chocolate.userId}`, {
                 method: 'DELETE',
                 headers: {
                     Accept: 'application/json',
@@ -269,8 +255,8 @@ class Home extends React.Component {
                                 <Text style={styles.dateItem}>{new Date(item.date).toDateString()}</Text>
                             </View>}
                         avatar={
-                            <View >
-                                <Image source={require('../images/choco.jpg')} style={styles.imageStyle}/>
+                            <View>
+                                <Image source={require(item.imagePath.toString())} style={styles.imageStyle}/>
                             </View>}
                         containerStyle={{borderBottomWidth: 0, height: 110, width: '100%'}}
                         onPress={() => this.entryPressed(item)}
@@ -327,12 +313,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     imageStyle: {
-        margin:3,
+        margin: 3,
         width: 100,
-        height:80,
+        height: 80,
         backgroundColor: 'grey'
     },
-    logoutBtn:{
+    logoutBtn: {
         height: 45,
         borderColor: "transparent",
         borderRadius: 5,
