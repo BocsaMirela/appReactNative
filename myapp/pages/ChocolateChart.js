@@ -1,5 +1,7 @@
 import {VictoryTheme, VictoryAxis, VictoryBar, VictoryChart} from 'victory-native';
 import React from 'react';
+import {Alert, StyleSheet, Text, View, AsyncStorage, Linking} from 'react-native';
+
 
 class ChocolateChart extends React.Component {
     constructor(props) {
@@ -10,9 +12,8 @@ class ChocolateChart extends React.Component {
         this.state.data = [];
         for (let i = 0; i < this.state.chocolatees.length; i++) {
             this.state.data.push({
-                ids: this.state.chocolatees[i].id,
-                name: this.state.chocolatees[i].body,
-                value: this.state.chocolatees[i].date
+                ids: this.state.chocolatees[i].id.toString(),
+                name: this.state.chocolatees[i].body.toString(),
             });
         }
     }
@@ -42,8 +43,8 @@ class ChocolateChart extends React.Component {
             <VictoryBar
                 style={{flex: 1}}
                 data={this.state.data}
-                x="Description"
-                y="Date"
+                x="ids"
+                y="name"
             />
         </VictoryChart></View>)
     }

@@ -1,9 +1,9 @@
 import React from 'react';
-import {FlatList, View, AsyncStorage, Text, NetInfo} from 'react-native';
+import {FlatList, View, AsyncStorage, Text, NetInfo, StyleSheet,Image} from 'react-native';
 import {entryEndpoint} from './environment';
-import ListItem from './ListItem';
+// import ListItem from './ListItem';
 import Toast from 'react-native-simple-toast';
-import {Button} from 'react-native-elements';
+import {Button, ListItem} from 'react-native-elements';
 
 let MAIN_SCREEN;
 
@@ -17,13 +17,7 @@ class Home extends React.Component {
                         onPress={navigation.getParam('handleLogout')}
                         title="Logout"
                         color="#000000"
-                        buttonStyle={{
-                            height: 45,
-                            borderColor: "transparent",
-                            borderRadius: 5,
-                            margin: 0
-
-                        }}
+                        buttonStyle={styles.logoutBtn}
                         containerStyle={{marginTop: 20}}
                     />
                 </View>
@@ -77,10 +71,10 @@ class Home extends React.Component {
 
     componentDidMount() {
         console.log("didMount")
-        // AsyncStorage.removeItem("@ChocolateApp:chocolateesInserted");
-        // AsyncStorage.removeItem("@ChocolateApp:chocolateesUpdated");
-        // AsyncStorage.removeItem("@ChocolateApp:chocolateesDeleted");
-        this.props.navigation.setParams({ handleLogout: this.handleLogout });
+        AsyncStorage.removeItem("@ChocolateApp:chocolateesInserted");
+        AsyncStorage.removeItem("@ChocolateApp:chocolateesUpdated");
+        AsyncStorage.removeItem("@ChocolateApp:chocolateesDeleted");
+        this.props.navigation.setParams({handleLogout: this.handleLogout});
         this.refresh();
     }
 
@@ -266,8 +260,22 @@ class Home extends React.Component {
                 // }}
                 renderItem={
                     ({item}) => <ListItem
-                        onClick={(entry) => this.entryPressed(entry)}
+                        title={
+                            <View>
+                                <Text style={styles.bodyItem}>{item.body.substring(0, 50) + '...'}</Text>
+                            </View>}
+                        subtitle={
+                            <View>
+                                <Text style={styles.dateItem}>{new Date(item.date).toDateString()}</Text>
+                            </View>}
+                        avatar={
+                            <View >
+                                <Image source={require('../images/choco.jpg')} style={styles.imageStyle}/>
+                            </View>}
+                        containerStyle={{borderBottomWidth: 0, height: 110, width: '100%'}}
+                        onPress={() => this.entryPressed(item)}
                         element={item}/>
+
                 }
                 refreshing={false}
                 onRefresh={() => this.refresh()}
@@ -276,15 +284,7 @@ class Home extends React.Component {
                 onPress={() => this.handleNewEntry()}
                 title="New Chocolate"
                 titleStyle={{fontWeight: "700", color: "rgba(46, 49, 49, 1)"}}
-                buttonStyle={{
-                    backgroundColor: "rgba(68, 108, 179, 1)",
-                    height: 45,
-                    borderColor: "rgba(46, 49, 49, 1)",
-                    borderWidth: 1,
-                    borderRadius: 5,
-                    margin: 5
-
-                }}
+                buttonStyle={styles.buttonAdd}
                 containerStyle={{marginTop: 20}}
             />
         </View>);
@@ -298,6 +298,47 @@ class Home extends React.Component {
         navigate('Login');
     };
 
+
 }
 
+const styles = StyleSheet.create({
+    buttonAdd: {
+        backgroundColor: "rgba(68, 108, 179, 1)",
+        height: 45,
+        borderColor: "rgba(46, 49, 49, 1)",
+        borderWidth: 1,
+        borderRadius: 5,
+        margin: 5
+    },
+    dateItem: {
+        margin: 3,
+        fontWeight: "bold",
+        fontSize: 15,
+        color: "rgba(150, 40, 27, 1)",
+        marginLeft: 10
+    },
+    bodyItem: {
+        marginLeft: 10,
+        marginRight: 3,
+        marginBottom: 3,
+        marginTop: 0,
+        padding: 1,
+        fontWeight: "bold",
+        fontSize: 16,
+    },
+    imageStyle: {
+        margin:3,
+        width: 100,
+        height:80,
+        backgroundColor: 'grey'
+    },
+    logoutBtn:{
+        height: 45,
+        borderColor: "transparent",
+        borderRadius: 5,
+        margin: 0
+
+    }
+
+});
 export default Home;
