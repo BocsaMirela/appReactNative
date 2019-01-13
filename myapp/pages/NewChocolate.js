@@ -15,6 +15,8 @@ import {entryEndpoint} from './environment';
 import Toast from "react-native-simple-toast";
 import {Button} from 'react-native-elements';
 import {Permissions, ImagePicker} from 'expo';
+import DatePicker from 'react-native-datepicker'
+
 
 const defaultSource = '../images/choco.jpg'
 
@@ -38,7 +40,8 @@ class NewChocolate extends React.Component {
         this.state =
             {
                 entry: this.entry && this.entry.body ? this.entry.body : '',
-                image: this.entry && this.entry.imagePath ? this.entry.imagePath : 'non'
+                image: this.entry && this.entry.imagePath ? this.entry.imagePath : 'non',
+                dateLoaded: this.entry && this.entry.date ? new Date(this.entry.date) : new Date()
             };
     }
 
@@ -58,8 +61,35 @@ class NewChocolate extends React.Component {
                     <Image
                         source={{uri: this.state.image}}
                         style={styles.imageStyle}
+                        placeholder="take an image"
                     />
                 </TouchableOpacity>
+                <DatePicker
+                    style={styles.datePicker}
+                    mode="date"
+                    date={this.state.dateLoaded}
+                    placeholder="select date"
+                    format="YYYY-MM-DD"
+                    minDate="2018-05-01"
+                    maxDate="2020-06-01"
+                    confirmBtnText="Confirm"
+                    cancelBtnText="Cancel"
+                    customStyles={{
+                        dateIcon: {
+                            position: 'absolute',
+                            left: 0,
+                            top: 4,
+                            marginLeft: 0
+                        },
+                        dateInput: {
+                            marginLeft: 36
+                        }
+                        // ... You can check the source to find the other keys.
+                    }}
+                    onDateChange={(date) => {
+                        this.setState({dateLoaded: date})
+                    }}
+                />
                 <Button
                     onPress={this._handleButtonPressTakePhoto}
                     title="Load a photo"
@@ -94,11 +124,12 @@ class NewChocolate extends React.Component {
         AsyncStorage.getItem('userId').then(id => {
             userID = parseInt(id)
         })
-        if (entry === '' || this.state.image=='non') {
+        console.log(" dataaa ", (new Date(this.state.dateLoaded)).getTime())
+        console.log(" dataaa 2222 ", new Date(this.state.dateLoaded))
+        if (entry === '' || this.state.image == 'non') {
             Alert.alert("Empty field", "Body or image for a chocolate cannot be empty")
         } else {
             if (!this.entry) {
-                console.log("enstry body" + entry)
                 this.fetchWithTimeout(`${entryEndpoint}`, {
                     timeout: 400,
                     method: 'POST',
@@ -109,7 +140,7 @@ class NewChocolate extends React.Component {
                     }),
                     body: JSON.stringify({
                         body: entry,
-                        date: Date.now(),
+                        date: (new Date(this.state.dateLoaded)).getTime(),
                         userId: userID,
                         imagePath: this.state.image,
                         wasUpdated: 1,
@@ -140,6 +171,7 @@ class NewChocolate extends React.Component {
                 });
             } else {
                 console.log("update del " + this.entry.id)
+                console.log("update dataaaa " + new Date(this.state.dateLoaded))
                 this.fetchWithTimeout(`${entryEndpoint}/${this.entry.id}/${this.entry.userId}`, {
                     method: 'PUT',
                     headers: new Headers({
@@ -150,7 +182,7 @@ class NewChocolate extends React.Component {
                     body: JSON.stringify({
                         id: this.entry.id,
                         body: entry,
-                        date: Date.now(),
+                        date: (new Date(this.state.dateLoaded)).getTime(),
                         userId: userID,
                         imagePath: this.state.image,
                         wasUpdated: 1,
@@ -194,11 +226,11 @@ class NewChocolate extends React.Component {
             }).id + 1
             id = parseInt(idNew)
         }
-        console.log(" id   after " + id)
+
         let chocolate = {
             id: id,
             body: entry,
-            date: Date.now(),
+            date: (new Date(this.state.dateLoaded).getTime()),
             userId: parseInt(userID),
             imagePath: this.state.image,
             wasUpdated: 1,
@@ -221,11 +253,10 @@ class NewChocolate extends React.Component {
         AsyncStorage.removeItem("@ChocolateApp:chocolatees")
 
         const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-        // MAIN_SCREEN.state.entries = MAIN_SCREEN.state.entries.slice();
         MAIN_SCREEN.state.entries = _.filter(MAIN_SCREEN.state.entries, (p) => p.id != this.entry.id || p.userId != this.entry.userId);
-        console.log("possttsts " + this.entry.id)
+
         this.entry.body = entry
-        this.entry.date = Date.now()
+        this.entry.date = (new Date(this.state.dateLoaded)).getTime()
         this.entry.wasUpdated = wasUpdated
         this.entry.imagePath = this.state.image
         MAIN_SCREEN.state.entries.push(this.entry)
@@ -321,7 +352,15 @@ const styles = StyleSheet.create({
         padding: 10,
         width: 200,
         height: 200,
-        backgroundColor:'grey',
+        backgroundColor: 'grey',
+    },
+    datePicker: {
+        width: 300,
+        marginTop: 5,
+        marginLeft: 20,
+        paddingLeft: 20,
+        marginRight: 10,
+        marginBottom: 5
     }
 
 })
