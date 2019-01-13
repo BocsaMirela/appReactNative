@@ -74,11 +74,12 @@ class NewChocolate extends React.Component {
                     async (res) => {
                         Alert.alert(
                             'Succes!',
-                            'Entry updated successfully!',
+                            'Chocolate added successfully!',
                             [
                                 {
                                     text: 'OK', onPress: () => {
-                                        this.saveLocal(entry, userID, 1)
+                                        console.log(" entry recived from server ", res)
+                                        this.saveLocal(res.id,entry, userID, 1)
                                     }
                                 },
                             ],
@@ -87,10 +88,10 @@ class NewChocolate extends React.Component {
                     },
                     (err) => {
                         Toast.show('Failed add item, trying local...', Toast.LONG);
-                        that.saveLocal(entry, userID, 0);
+                        that.saveLocal(-1,entry, userID, 0);
                     }).catch(function (err) {
                     Toast.show('Failed add item, trying local...', Toast.LONG);
-                    that.saveLocal(entry, userID, 0);
+                    that.saveLocal(-1,entry, userID, 0);
                 });
             } else {
                 console.log("update del " + this.entry.id)
@@ -114,7 +115,7 @@ class NewChocolate extends React.Component {
                     (res) => {
                         Alert.alert(
                             'Succes!',
-                            'Entry updated successfully!',
+                            'Chocolate updated successfully!',
                             [
                                 {
                                     text: 'OK', onPress: () => {
@@ -137,16 +138,20 @@ class NewChocolate extends React.Component {
         }
     }
 
-    saveLocal(entry, userID, inserted) {
+    saveLocal(id,entry, userID, inserted) {
         AsyncStorage.removeItem("@ChocolateApp:chocolatees")
+        console.log(" id  fisrt "+id)
 
         const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-        let idNew = MAIN_SCREEN.state.entries.length === 0 ? 1 : _.max(MAIN_SCREEN.state.entries, function (p) {
-            return p.id
-        }).id + 1
-        idNew = parseInt(idNew)
+        if (id==-1) {
+            let idNew = MAIN_SCREEN.state.entries.length === 0 ? 1 : _.max(MAIN_SCREEN.state.entries, function (p) {
+                return p.id
+            }).id +1
+           id=parseInt(idNew)
+        }
+        console.log(" id   after "+id)
         let chocolate = {
-            id: idNew,
+            id: id,
             body: entry,
             date: Date.now(),
             userId: parseInt(userID),
@@ -156,6 +161,8 @@ class NewChocolate extends React.Component {
         };
         MAIN_SCREEN.state.entries.push(chocolate)
         MAIN_SCREEN.setState(MAIN_SCREEN.state);
+
+        console.log(" entries ",MAIN_SCREEN.state.entries)
 
         AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(MAIN_SCREEN.state.entries)).catch(function (err) {
             console.log(err);
@@ -189,8 +196,8 @@ class NewChocolate extends React.Component {
     fetchWithTimeout(url, options = undefined, timeout = 2500) {
         return Promise.race([
             fetch(url, options),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('timeout')), timeout)
+            new Promise((_, abort) =>
+                setTimeout(() => abort(new Error('timeout')), timeout)
             )
         ]);
     }
@@ -215,7 +222,7 @@ const styles = StyleSheet.create({
         color: "rgba(46, 49, 49, 1)"
     },
     btn: {
-        backgroundColor: "rgba(68, 108, 179, 1)",
+        backgroundColor: "rgba(74, 50, 24,1)",
         height: 45,
         borderColor: "rgba(46, 49, 49, 1)",
         borderWidth: 1,

@@ -29,7 +29,8 @@ class Home extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            entries: []
+            entries: [],
+            isRefreshing: true
         }
         this.lastFetchedPage = -1;
         this.more = true;
@@ -65,7 +66,7 @@ class Home extends React.Component {
                         element={item}/>
 
                 }
-                refreshing={false}
+                refreshing={this.state.isRefreshing}
                 onRefresh={() => this.refresh()}
             />
             <Button
@@ -75,6 +76,7 @@ class Home extends React.Component {
                 buttonStyle={styles.buttonAdd}
                 containerStyle={{marginTop: 20}}
             />
+
         </View>);
     }
 
@@ -93,7 +95,7 @@ class Home extends React.Component {
                     this.lastFetchedPage++;
                     this.more = responseJson.more;
                     this.setState({
-                        entries: [...this.state.entries, ...responseJson.entries]
+                        entries: [...this.state.entries, ...responseJson.entries], isRefreshing:false
                     })
                 } else {
                     console.log("status " + responseJson.status + " " + responseJson.outcome)
@@ -102,7 +104,7 @@ class Home extends React.Component {
             .catch(function (err) {
                 Toast.show('Failed to get items from the internet, trying local storage...', Toast.LONG);
                 AsyncStorage.getItem("@ChocolateApp:chocolatees").then(function (res) {
-                    that.setState({entries: JSON.parse(res)});
+                    that.setState({entries: JSON.parse(res),isRefreshing:false});
                     console.log("Success!");
                 }).catch(function (err) {
                     console.log("Failed to get items from AsyncStorage chocolatees");
@@ -262,8 +264,8 @@ class Home extends React.Component {
     fetchWithTimeout(url, options = undefined, timeout = 4000) {
         return Promise.race([
             fetch(url, options),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('timeout')), timeout)
+            new Promise((_, abort) =>
+                setTimeout(() => abort(new Error('timeout')), timeout)
             )
         ]);
     }
@@ -288,7 +290,7 @@ class Home extends React.Component {
 
 const styles = StyleSheet.create({
     buttonAdd: {
-        backgroundColor: "rgba(68, 108, 179, 1)",
+        backgroundColor: "rgba(74, 50, 24, 1)",
         height: 45,
         borderColor: "rgba(46, 49, 49, 1)",
         borderWidth: 1,

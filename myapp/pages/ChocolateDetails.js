@@ -4,6 +4,7 @@ import {Alert, StyleSheet, Text, View, AsyncStorage, Linking} from 'react-native
 import {entryEndpoint} from './environment';
 import Toast from "react-native-simple-toast";
 import {Button} from 'react-native-elements';
+const fetch = require('react-native-cancelable-fetch');
 
 class ChocolateDetails extends React.Component {
     static navigationOptions = {
@@ -18,7 +19,7 @@ class ChocolateDetails extends React.Component {
     render() {
         return (
             <View>
-                <Text style={{margin: 10, fontWeight: "bold", fontSize: 20, color: "rgba(150, 40, 27, 1)"}}>Chocolate
+                <Text style={styles.txt}>Chocolate
                     from {new Date(this.entry.date).toDateString()}:</Text>
                 <Text style={{margin: 10, fontWeight: "bold", fontSize: 20}}>{this.entry.body}</Text>
                 <Button
@@ -143,8 +144,8 @@ class ChocolateDetails extends React.Component {
     fetchWithTimeout(url, options = undefined, timeout = 3000) {
         return Promise.race([
             fetch(url, options),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('timeout')), timeout)
+            new Promise((_, abort) =>
+                setTimeout(() => abort(new Error('timeout')), timeout)
             )
         ]);
     }
@@ -156,7 +157,7 @@ const styles = StyleSheet.create({
         color: "rgba(46, 49, 49, 1)"
     },
     btnStyle: {
-        backgroundColor: "rgba(68, 108, 179, 1)",
+        backgroundColor: "rgba(74, 50, 24, 1)",
         width: 305,
         height: 45,
         borderColor: "rgba(46, 49, 49, 1)",
@@ -173,7 +174,8 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 5,
         margin: 5
-    }
+    },
+    txt:{margin: 10, fontWeight: "bold", fontSize: 20, color: "rgba(150, 40, 27, 1)"}
 
 })
 
