@@ -1,10 +1,31 @@
 import React from 'react';
 import _ from 'underscore';
-import {StyleSheet, Text, TextInput, View, Alert, AsyncStorage} from 'react-native';
+import {
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+    Alert,
+    AsyncStorage,
+    Image,
+    TouchableHighlight,
+    TouchableOpacity
+} from 'react-native';
 import {entryEndpoint} from './environment';
 import Toast from "react-native-simple-toast";
 import {Button} from 'react-native-elements';
+import {Permissions, ImagePicker} from 'expo';
 
+const defaultSource = '../images/choco.jpg'
+
+const options = {
+    title: 'Select Avatar',
+    customButtons: [{name: 'fb', title: 'Choose Photo from Facebook'}],
+    storageOptions: {
+        skipBackup: true,
+        path: 'images',
+    },
+};
 
 class NewChocolate extends React.Component {
     static navigationOptions = {
@@ -14,7 +35,11 @@ class NewChocolate extends React.Component {
     constructor(props) {
         super(props)
         this.entry = this.props.navigation.state.params.entry;
-        this.state = {entry: this.entry && this.entry.body ? this.entry.body : ''};
+        this.state =
+            {
+                entry: this.entry && this.entry.body ? this.entry.body : '',
+                image: this.entry && this.entry.imagePath ? this.entry.imagePath : 'non'
+            };
     }
 
     render() {
@@ -28,6 +53,26 @@ class NewChocolate extends React.Component {
                     multiline={true}
                     numberOfLines={4}
                     maxLength={256}
+                />
+                <TouchableOpacity onPress={() => this._handleButtonPressTakePhoto()}>
+                    <Image
+                        source={{uri: this.state.image}}
+                        style={styles.imageStyle}
+                    />
+                </TouchableOpacity>
+                <Button
+                    onPress={this._handleButtonPressTakePhoto}
+                    title="Load a photo"
+                    titleStyle={styles.titleBtn}
+                    buttonStyle={styles.btn}
+                    containerStyle={{marginTop: 20}}
+                />
+                <Button
+                    onPress={this._handleButtonPressMakePhoto}
+                    title="Make a photo"
+                    titleStyle={styles.titleBtn}
+                    buttonStyle={styles.btn}
+                    containerStyle={{marginTop: 20}}
                 />
                 <Button
                     onPress={() => this.handleSubmit()}
@@ -49,8 +94,8 @@ class NewChocolate extends React.Component {
         AsyncStorage.getItem('userId').then(id => {
             userID = parseInt(id)
         })
-        if (entry === '') {
-            Alert.alert("Empty field", "Body for a chocolate cannot be empty")
+        if (entry === '' || this.state.image=='non') {
+            Alert.alert("Empty field", "Body or image for a chocolate cannot be empty")
         } else {
             if (!this.entry) {
                 console.log("enstry body" + entry)
@@ -66,7 +111,7 @@ class NewChocolate extends React.Component {
                         body: entry,
                         date: Date.now(),
                         userId: userID,
-                        imagePath: '../images/choco.jpg',
+                        imagePath: this.state.image,
                         wasUpdated: 1,
                         wasInserted: 1
                     }),
@@ -79,7 +124,7 @@ class NewChocolate extends React.Component {
                                 {
                                     text: 'OK', onPress: () => {
                                         console.log(" entry recived from server ", res)
-                                        this.saveLocal(res.id,entry, userID, 1)
+                                        this.saveLocal(res.id, entry, userID, 1)
                                     }
                                 },
                             ],
@@ -88,10 +133,10 @@ class NewChocolate extends React.Component {
                     },
                     (err) => {
                         Toast.show('Failed add item, trying local...', Toast.LONG);
-                        that.saveLocal(-1,entry, userID, 0);
+                        that.saveLocal(-1, entry, userID, 0);
                     }).catch(function (err) {
                     Toast.show('Failed add item, trying local...', Toast.LONG);
-                    that.saveLocal(-1,entry, userID, 0);
+                    that.saveLocal(-1, entry, userID, 0);
                 });
             } else {
                 console.log("update del " + this.entry.id)
@@ -107,7 +152,7 @@ class NewChocolate extends React.Component {
                         body: entry,
                         date: Date.now(),
                         userId: userID,
-                        imagePath: '../images/choco.jpg',
+                        imagePath: this.state.image,
                         wasUpdated: 1,
                         wasInserted: 1
                     }),
@@ -138,31 +183,31 @@ class NewChocolate extends React.Component {
         }
     }
 
-    saveLocal(id,entry, userID, inserted) {
+    saveLocal(id, entry, userID, inserted) {
         AsyncStorage.removeItem("@ChocolateApp:chocolatees")
-        console.log(" id  fisrt "+id)
+        console.log(" id  fisrt " + id)
 
         const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-        if (id==-1) {
+        if (id == -1) {
             let idNew = MAIN_SCREEN.state.entries.length === 0 ? 1 : _.max(MAIN_SCREEN.state.entries, function (p) {
                 return p.id
-            }).id +1
-           id=parseInt(idNew)
+            }).id + 1
+            id = parseInt(idNew)
         }
-        console.log(" id   after "+id)
+        console.log(" id   after " + id)
         let chocolate = {
             id: id,
             body: entry,
             date: Date.now(),
             userId: parseInt(userID),
-            imagePath: '../images/choco.jpg',
+            imagePath: this.state.image,
             wasUpdated: 1,
             wasInserted: inserted
         };
         MAIN_SCREEN.state.entries.push(chocolate)
         MAIN_SCREEN.setState(MAIN_SCREEN.state);
 
-        console.log(" entries ",MAIN_SCREEN.state.entries)
+        console.log(" entries ", MAIN_SCREEN.state.entries)
 
         AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(MAIN_SCREEN.state.entries)).catch(function (err) {
             console.log(err);
@@ -182,6 +227,7 @@ class NewChocolate extends React.Component {
         this.entry.body = entry
         this.entry.date = Date.now()
         this.entry.wasUpdated = wasUpdated
+        this.entry.imagePath = this.state.image
         MAIN_SCREEN.state.entries.push(this.entry)
         MAIN_SCREEN.setState(MAIN_SCREEN.state);
 
@@ -201,6 +247,46 @@ class NewChocolate extends React.Component {
             )
         ]);
     }
+
+    _handleButtonPressTakePhoto = async () => {
+        const {status} = await Permissions.askAsync(Permissions.CAMERA_ROLL);
+        if (status === 'granted') {
+            console.log(" permission granted")
+            let result = await ImagePicker.launchImageLibraryAsync({
+                allowsEditing: true,
+                aspect: [4, 3],
+            });
+            console.log(result);
+
+            if (!result.cancelled) {
+                console.log(" image uri ", result.uri)
+                this.setState({image: result.uri});
+            }
+        } else {
+            throw new Error('Location permission not granted');
+        }
+
+    };
+
+    _handleButtonPressMakePhoto = async () => {
+        const {status} = await Permissions.askAsync(Permissions.CAMERA_ROLL);
+        if (status === 'granted') {
+            console.log(" permission granted")
+            let result = await ImagePicker.launchCameraAsync({
+                allowsEditing: true,
+                aspect: [4, 3],
+            });
+            console.log(result);
+
+            if (!result.cancelled) {
+                console.log(" image uri ", result.uri)
+                this.setState({image: result.uri});
+            }
+        } else {
+            throw new Error('Location permission not granted');
+        }
+
+    };
 }
 
 const styles = StyleSheet.create({
@@ -228,6 +314,14 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 5,
         margin: 5
+    },
+    imageStyle: {
+        margin: 10,
+        marginLeft: 80,
+        padding: 10,
+        width: 200,
+        height: 200,
+        backgroundColor:'grey',
     }
 
 })

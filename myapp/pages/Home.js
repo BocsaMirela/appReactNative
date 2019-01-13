@@ -59,7 +59,7 @@ class Home extends React.Component {
                             </View>}
                         avatar={
                             <View>
-                                <Image source={require('../images/choco.jpg')} style={styles.imageStyle}/>
+                                <Image source={{uri: item.imagePath}} style={styles.imageStyle}/>
                             </View>}
                         containerStyle={{borderBottomWidth: 0, height: 110, width: '100%'}}
                         onPress={() => this.entryPressed(item)}
