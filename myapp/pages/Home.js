@@ -36,6 +36,48 @@ class Home extends React.Component {
         MAIN_SCREEN = this
     }
 
+    render() {
+        return (<View>
+            <FlatList
+                style={{height: '90%'}}
+                keyExtractor={(item, index) => index.toString()}
+                data={this.state.entries}
+                // onEndReachedThreshold={0.5}
+                // onEndReached={({distanceFromEnd}) => {
+                //     this.fetchEntriesByPage();
+                // }}
+                renderItem={
+                    ({item}) => <ListItem
+                        title={
+                            <View>
+                                <Text style={styles.bodyItem}>{item.body.substring(0, 50) + '...'}</Text>
+                            </View>}
+                        subtitle={
+                            <View>
+                                <Text style={styles.dateItem}>{new Date(item.date).toDateString()}</Text>
+                            </View>}
+                        avatar={
+                            <View>
+                                <Image source={require('../images/choco.jpg')} style={styles.imageStyle}/>
+                            </View>}
+                        containerStyle={{borderBottomWidth: 0, height: 110, width: '100%'}}
+                        onPress={() => this.entryPressed(item)}
+                        element={item}/>
+
+                }
+                refreshing={false}
+                onRefresh={() => this.refresh()}
+            />
+            <Button
+                onPress={() => this.handleNewEntry()}
+                title="New Chocolate"
+                titleStyle={{fontWeight: "700", color: "rgba(46, 49, 49, 1)"}}
+                buttonStyle={styles.buttonAdd}
+                containerStyle={{marginTop: 20}}
+            />
+        </View>);
+    }
+
     async fetchEntriesByPage() {
         let that = this
         if (this.more == false) return;
@@ -100,121 +142,120 @@ class Home extends React.Component {
         navigate('ChocolateDetails', {entry: entry, MAIN_SCREEN: MAIN_SCREEN});
     }
 
-    async syncronizeDataInserted() {
+    syncronizeDataInserted() {
         console.log("inserted sync")
 
-        let localNewData = []
         AsyncStorage.getItem("@ChocolateApp:chocolatees").then(function (res) {
-            localNewData = JSON.parse(res)
-            console.log("Success inserted sync get data!");
+            console.log(" inserted data ", res)
+            res = _.filter(JSON.parse(res), (p) => p.wasInserted == 0);
+
+            console.log("inserted " + res.length)
+
+            res.map((chocolate) => {
+                console.log("add to server from local " + chocolate.body)
+                fetch(`${entryEndpoint}`, {
+                    method: 'POST',
+                    headers: new Headers({
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + AsyncStorage.getItem('token')
+                    }),
+                    body: JSON.stringify({
+                        id: chocolate.id,
+                        body: chocolate.body,
+                        date: chocolate.date,
+                        userId: chocolate.userId,
+                        imagePath: chocolate.imagePath,
+                        wasInserted: 1,
+                        wasUpdated: chocolate.wasUpdated
+                    }),
+                }).catch(function (err) {
+
+                });
+            })
+            console.log("Success!");
         }).catch(function (err) {
-            console.log("Failed to get items from AsyncStorage");
+            console.log("Failed to get items from AsyncStorage chocolatees");
             console.log(err);
         });
-        localNewData = _.filter(localNewData, (p) => p.wasInserted == 0);
 
-        console.log("inserted " + localNewData.length)
-
-        localNewData.map((chocolate) => {
-            console.log("add to server from local " + chocolate.body)
-            fetch(`${entryEndpoint}`, {
-                method: 'POST',
-                headers: new Headers({
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + AsyncStorage.getItem('token')
-                }),
-                body: JSON.stringify({
-                    id: chocolate.id,
-                    body: chocolate.body,
-                    date: chocolate.date,
-                    userId: chocolate.userId,
-                    imagePath: chocolate.imagePath,
-                    wasInserted: 1,
-                    wasUpdated: chocolate.wasUpdated
-                }),
-            }).catch(function (err) {
-
-            });
-        })
     }
 
-    async syncronizeDataUpdated() {
+    syncronizeDataUpdated() {
         console.log("update sync")
 
         let localNewData = []
 
         AsyncStorage.getItem("@ChocolateApp:chocolatees").then(function (res) {
-            localNewData = JSON.parse(res)
-            console.log("Success updated sync get data!");
+            localNewData = _.filter(JSON.parse(res), (p) => p.wasUpdated == 0);
+
+            console.log("updated " + localNewData.length)
+
+            localNewData.map((chocolate) => {
+                console.log("update to server from local " + chocolate.body)
+                fetch(`${entryEndpoint}/${chocolate.id}`, {
+                    method: 'PUT',
+                    headers: new Headers({
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + AsyncStorage.getItem('token')
+                    }),
+                    body: JSON.stringify({
+                        id: chocolate.id,
+                        body: chocolate.body,
+                        date: chocolate.date,
+                        userId: chocolate.userId,
+                        imagePath: chocolate.imagePath,
+                        wasUpdated: 0,
+                        wasInserted: chocolate.wasInserted
+                    }),
+                }).catch(function (err) {
+
+                });
+            })
         }).catch(function (err) {
-            console.log("Failed to get items from AsyncStorage");
+            console.log("Failed to get items from AsyncStorage update");
             console.log(err);
         });
 
-        localNewData = _.filter(localNewData, (p) => p.wasUpdated == 0);
-
-        console.log("updated " + localNewData.length)
-
-        localNewData.map((chocolate) => {
-            console.log("update to server from local " + chocolate.body())
-            fetch(`${entryEndpoint}/${chocolate.id}`, {
-                method: 'PUT',
-                headers: new Headers({
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + AsyncStorage.getItem('token')
-                }),
-                body: JSON.stringify({
-                    id: chocolate.id,
-                    body: chocolate.body,
-                    date: chocolate.date,
-                    userId: chocolate.userId,
-                    imagePath: chocolate.imagePath,
-                    wasUpdated: 0,
-                    wasInserted: chocolate.wasInserted
-                }),
-            }).catch(function (err) {
-
-            });
-        })
     }
 
-    async syncronizeDataDeleted() {
-        console.log("delete sync")
+    syncronizeDataDeleted() {
+        console.log("\ndelete sync")
 
         let localNewData = []
         let unDeletedData = []
         AsyncStorage.getItem("@ChocolateApp:chocolateesDeleted").then(function (res) {
-            localNewData = JSON.parse(res)
+            console.log("deleted " + JSON.parse(res))
+
+            localNewData = _.filter(JSON.parse(res), () => true);
             console.log("Success deleted sync get data!");
+
+            localNewData.map((chocolate) => {
+                console.log("update to server from local " + chocolate.body)
+                fetch(`${entryEndpoint}/${chocolate.id}/${chocolate.userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + AsyncStorage.getItem('token')
+                    }
+                }).catch(function (err) {
+                    unDeletedData.push(chocolate)
+                });
+            })
+            AsyncStorage.removeItem("@ChocolateApp:chocolateesDeleted");
+            if (unDeletedData.length > 0) {
+                AsyncStorage.setItem("@ChocolateApp:chocolateesDeleted", JSON.stringify(unDeletedData)).catch(function (err) {
+                    console.log("Error on delete the chocolatees");
+                    console.log(err);
+                })
+            }
         }).catch(function (err) {
-            console.log("Failed to get items from AsyncStorage");
+            console.log("Failed to get items from AsyncStorage deleted");
             console.log(err);
         });
 
-        console.log("deleted " + localNewData.length)
-
-        localNewData.map((chocolate) => {
-            console.log("update to server from local " + chocolate.body())
-            fetch(`${entryEndpoint}/${chocolate.id}/${chocolate.userId}`, {
-                method: 'DELETE',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + AsyncStorage.getItem('token')
-                }
-            }).catch(function (err) {
-                unDeletedData.push(chocolate)
-            });
-        })
-        AsyncStorage.removeItem("@ChocolateApp:chocolateesDeleted");
-        if (unDeletedData.length > 0) {
-            AsyncStorage.setItem("@ChocolateApp:chocolateesDeleted", JSON.stringify(unDeletedData)).catch(function (err) {
-                console.log("Error on delete the chocolatees");
-                console.log(err);
-            })
-        }
 
     }
 
@@ -232,48 +273,6 @@ class Home extends React.Component {
         this.syncronizeDataInserted()
         this.syncronizeDataUpdated()
         this.syncronizeDataDeleted()
-    }
-
-    render() {
-        return (<View>
-            <FlatList
-                style={{height: '90%'}}
-                keyExtractor={(item, index) => index.toString()}
-                data={this.state.entries}
-                // onEndReachedThreshold={0.5}
-                // onEndReached={({distanceFromEnd}) => {
-                //     this.fetchEntriesByPage();
-                // }}
-                renderItem={
-                    ({item}) => <ListItem
-                        title={
-                            <View>
-                                <Text style={styles.bodyItem}>{item.body.substring(0, 50) + '...'}</Text>
-                            </View>}
-                        subtitle={
-                            <View>
-                                <Text style={styles.dateItem}>{new Date(item.date).toDateString()}</Text>
-                            </View>}
-                        avatar={
-                            <View>
-                                <Image source={require(item.imagePath.toString())} style={styles.imageStyle}/>
-                            </View>}
-                        containerStyle={{borderBottomWidth: 0, height: 110, width: '100%'}}
-                        onPress={() => this.entryPressed(item)}
-                        element={item}/>
-
-                }
-                refreshing={false}
-                onRefresh={() => this.refresh()}
-            />
-            <Button
-                onPress={() => this.handleNewEntry()}
-                title="New Chocolate"
-                titleStyle={{fontWeight: "700", color: "rgba(46, 49, 49, 1)"}}
-                buttonStyle={styles.buttonAdd}
-                containerStyle={{marginTop: 20}}
-            />
-        </View>);
     }
 
     handleLogout = () => {

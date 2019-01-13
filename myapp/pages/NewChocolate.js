@@ -47,7 +47,7 @@ class NewChocolate extends React.Component {
         let that = this
         let chocolate = this.entry
         AsyncStorage.getItem('userId').then(id => {
-            userID = id
+            userID = parseInt(id)
         })
         if (entry === '') {
             Alert.alert("Empty field", "Body for a chocolate cannot be empty")
@@ -66,9 +66,9 @@ class NewChocolate extends React.Component {
                         body: entry,
                         date: Date.now(),
                         userId: userID,
-                        imagePath: '/../images/choco.jpg',
-                        wasUpdated: 0,
-                        wasInserted: chocolate.wasInserted
+                        imagePath: '../images/choco.jpg',
+                        wasUpdated: 1,
+                        wasInserted: 1
                     }),
                 }).then(res => res.json()).then(
                     async (res) => {
@@ -78,24 +78,7 @@ class NewChocolate extends React.Component {
                             [
                                 {
                                     text: 'OK', onPress: () => {
-                                        AsyncStorage.removeItem("@ChocolateApp:chocolatees")
-
-                                        const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-                                        let chocolate = {
-                                            id: MAIN_SCREEN.state.entries.length === 0 ? 1 : _.max(MAIN_SCREEN.state.entries, function (p) {
-                                                return p.id
-                                            }).id + 1,
-                                            body: entry,
-                                            date: Date.now(),
-                                            userId: userID
-                                        };
-                                        MAIN_SCREEN.state.entries.push(chocolate)
-                                        MAIN_SCREEN.setState(MAIN_SCREEN.state);
-
-                                        AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(MAIN_SCREEN.state.entries)).catch(function (err) {
-                                            console.log(err);
-                                        })
-                                        navigate('Home');
+                                        this.saveLocal(entry, userID, 1)
                                     }
                                 },
                             ],
@@ -103,9 +86,11 @@ class NewChocolate extends React.Component {
                         );
                     },
                     (err) => {
-                        that.saveLocal(entry, userID);
+                        Toast.show('Failed add item, trying local...', Toast.LONG);
+                        that.saveLocal(entry, userID, 0);
                     }).catch(function (err) {
-                    that.saveLocal(entry, userID);
+                    Toast.show('Failed add item, trying local...', Toast.LONG);
+                    that.saveLocal(entry, userID, 0);
                 });
             } else {
                 console.log("update del " + this.entry.id)
@@ -120,7 +105,10 @@ class NewChocolate extends React.Component {
                         id: this.entry.id,
                         body: entry,
                         date: Date.now(),
-                        userId: userID
+                        userId: userID,
+                        imagePath: '../images/choco.jpg',
+                        wasUpdated: 1,
+                        wasInserted: 1
                     }),
                 }).then(
                     (res) => {
@@ -130,22 +118,7 @@ class NewChocolate extends React.Component {
                             [
                                 {
                                     text: 'OK', onPress: () => {
-                                        AsyncStorage.removeItem("@ChocolateApp:chocolatees")
-
-                                        const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-                                        MAIN_SCREEN.state.entries = MAIN_SCREEN.state.entries.slice();
-                                        MAIN_SCREEN.state.entries = _.filter(MAIN_SCREEN.state.entries, (p) => p.id !== this.entry.id);
-                                        console.log("possttsts " + this.entry.id)
-                                        this.entry.body = entry
-                                        this.entry.date = Date.now()
-                                        MAIN_SCREEN.state.entries.push(this.entry)
-                                        MAIN_SCREEN.setState(MAIN_SCREEN.state);
-
-                                        AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(MAIN_SCREEN.state.entries)).catch(function (err) {
-                                            console.log(err);
-                                        })
-
-                                        navigate('Home');
+                                        this.saveLocalUpdate(entry, 1)
                                     }
                                 },
                             ],
@@ -153,100 +126,63 @@ class NewChocolate extends React.Component {
                         );
                     },
                     (err) => {
-                        that.saveLocalUpdate(chocolate, entry, userID);
+                        Toast.show('Failed update item, trying local...', Toast.LONG);
+                        that.saveLocalUpdate(entry, 0);
                     }).catch(function (err) {
-                    that.saveLocalUpdate(chocolate, entry, userID);
+                    Toast.show('Failed update item, trying local...', Toast.LONG);
+                    that.saveLocalUpdate(entry, 0);
 
                 });
             }
         }
     }
 
-    saveLocal(entry, userID) {
-        Toast.show('Failed add item, trying local...', Toast.LONG);
-        console.log("inserted " + entry)
-
-        const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-
-        let localInserted = []
-        let localData = MAIN_SCREEN.state.entries
-
-        AsyncStorage.getItem("@ChocolateApp:chocolateesInserted").then(function (res) {
-            localInserted = JSON.parse(res)
-            console.log("Success insert add size !" + localInserted.length);
-        }).catch(function (err) {
-            console.log("Failed to get items from AsyncStorage add inserted");
-            console.log(err);
-        });
-
-        let chocolate = {
-            id: MAIN_SCREEN.state.entries.length === 0 ? 1 : _.max(MAIN_SCREEN.state.entries, function (p) {
-                return p.id
-            }).id + 1,
-            body: entry,
-            date: Date.now(),
-            userId: userID
-        };
-        localData.push(chocolate)
-        localInserted.push(chocolate)
-
-        AsyncStorage.removeItem("@ChocolateApp:chocolateesInserted")
+    saveLocal(entry, userID, inserted) {
         AsyncStorage.removeItem("@ChocolateApp:chocolatees")
 
-        console.log("insert inserted " + localInserted.length)
+        const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
+        let idNew = MAIN_SCREEN.state.entries.length === 0 ? 1 : _.max(MAIN_SCREEN.state.entries, function (p) {
+            return p.id
+        }).id + 1
+        idNew = parseInt(idNew)
+        let chocolate = {
+            id: idNew,
+            body: entry,
+            date: Date.now(),
+            userId: parseInt(userID),
+            imagePath: '../images/choco.jpg',
+            wasUpdated: 1,
+            wasInserted: inserted
+        };
+        MAIN_SCREEN.state.entries.push(chocolate)
+        MAIN_SCREEN.setState(MAIN_SCREEN.state);
 
-        AsyncStorage.setItem("@ChocolateApp:chocolateesInserted", JSON.stringify(localInserted)).catch(function (err) {
-            console.log("Failed to set items insert");
-        })
-
-        AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(localData)).catch(function (err) {
+        AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(MAIN_SCREEN.state.entries)).catch(function (err) {
             console.log(err);
         })
 
         const {navigate} = this.props.navigation;
-        MAIN_SCREEN.setState(localData);
         navigate('Home');
     }
 
-    saveLocalUpdate(entry, txt, userID) {
-        console.log("entry update " + entry.id)
-        Toast.show('Failed to update item, trying local...', Toast.LONG);
-
-        const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-
-        let localUpdated = []
-        let localData = MAIN_SCREEN.state.entries
-
-        AsyncStorage.getItem("@ChocolateApp:chocolateesUpdated").then(function (res) {
-            localUpdated = JSON.parse(res)
-            console.log("Success update add size !" + localUpdated.length);
-        }).catch(function (err) {
-            console.log("Failed to get items from AsyncStorage add updated");
-            console.log(err);
-        });
-
-        localData = _.filter(localData, (p) => p.id !== entry.id || p.userId !== entry.userId);
-
-        console.log("size " + localData.length)
-        entry.body = txt
-        entry.date = Date.now()
-        localData.push(entry)
-        localUpdated.push(entry)
-
-        AsyncStorage.removeItem("@ChocolateApp:chocolateesUpdated")
+    saveLocalUpdate(entry, wasUpdated) {
         AsyncStorage.removeItem("@ChocolateApp:chocolatees")
 
-        console.log("insert updated " + localUpdated.length)
-        AsyncStorage.setItem("@ChocolateApp:chocolateesUpdated", JSON.stringify(localUpdated)).catch(function (err) {
-            console.log("Failed to set items update");
-        })
+        const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
+        // MAIN_SCREEN.state.entries = MAIN_SCREEN.state.entries.slice();
+        MAIN_SCREEN.state.entries = _.filter(MAIN_SCREEN.state.entries, (p) => p.id != this.entry.id || p.userId != this.entry.userId);
+        console.log("possttsts " + this.entry.id)
+        this.entry.body = entry
+        this.entry.date = Date.now()
+        this.entry.wasUpdated = wasUpdated
+        MAIN_SCREEN.state.entries.push(this.entry)
+        MAIN_SCREEN.setState(MAIN_SCREEN.state);
 
-        AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(localData)).catch(function (err) {
+        AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(MAIN_SCREEN.state.entries)).catch(function (err) {
             console.log(err);
         })
 
         const {navigate} = this.props.navigation;
-        MAIN_SCREEN.setState(localData);
         navigate('Home');
     }
 

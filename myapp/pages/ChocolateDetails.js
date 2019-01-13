@@ -3,7 +3,7 @@ import _ from 'underscore';
 import {Alert, StyleSheet, Text, View, AsyncStorage, Linking} from 'react-native';
 import {entryEndpoint} from './environment';
 import Toast from "react-native-simple-toast";
-import { Button } from 'react-native-elements';
+import {Button} from 'react-native-elements';
 
 class ChocolateDetails extends React.Component {
     static navigationOptions = {
@@ -18,71 +18,34 @@ class ChocolateDetails extends React.Component {
     render() {
         return (
             <View>
-                <Text style={{margin: 10, fontWeight: "bold", fontSize:20, color:"rgba(150, 40, 27, 1)"}}>Chocolate
+                <Text style={{margin: 10, fontWeight: "bold", fontSize: 20, color: "rgba(150, 40, 27, 1)"}}>Chocolate
                     from {new Date(this.entry.date).toDateString()}:</Text>
-                <Text style={{margin: 10,fontWeight: "bold", fontSize:20}}>{this.entry.body}</Text>
+                <Text style={{margin: 10, fontWeight: "bold", fontSize: 20}}>{this.entry.body}</Text>
                 <Button
                     onPress={() => this.handleEdit()}
                     title="Edit this chocolate"
-                    titleStyle={{ fontWeight: "700", color: "rgba(46, 49, 49, 1)" }}
-                    buttonStyle={{
-                        backgroundColor: "rgba(68, 108, 179, 1)",
-                        width: 305,
-                        height: 45,
-                        borderColor: "rgba(46, 49, 49, 1)",
-                        borderWidth: 1,
-                        borderRadius: 5,
-                        margin: 5,
-                        marginTop: 10
-
-                    }}
-                    containerStyle={{ marginTop: 20 }}
+                    titleStyle={styles.btnTitle}
+                    buttonStyle={styles.btnStyle}
+                    containerStyle={{marginTop: 20}}
                 />
                 <Button
                     onPress={() => this.handleDelete()}
                     title="Delete this chocolate"
-                    titleStyle={{ fontWeight: "700", color: "rgba(46, 49, 49, 1)" }}
-                    buttonStyle={{
-                        backgroundColor: "rgba(150, 40, 27, 1)",
-                        width: 305,
-                        height: 45,
-                        borderColor: "rgba(46, 49, 49, 1)",
-                        borderWidth: 1,
-                        borderRadius: 5,
-                        margin: 5
-
-                    }}
-                    containerStyle={{ marginTop: 20 }}
+                    titleStyle={styles.btnTitle}
+                    buttonStyle={styles.btnDelete}
+                    containerStyle={{marginTop: 20}}
                 />
                 <Button title="SEARCH ONLINE"
                         onPress={this.pressSearch.bind(this)}
-                        titleStyle={{ fontWeight: "700", color: "rgba(46, 49, 49, 1)" }}
-                        buttonStyle={{
-                            backgroundColor: "rgba(68, 108, 179, 1)",
-                            width: 305,
-                            height: 45,
-                            borderColor: "rgba(46, 49, 49, 1)",
-                            borderWidth: 1,
-                            borderRadius: 5,
-                            margin: 5
-
-                        }}
-                        containerStyle={{ marginTop: 20 }}/>
+                        titleStyle={styles.btnTitle}
+                        buttonStyle={styles.btnStyle}
+                        containerStyle={{marginTop: 20}}/>
 
                 <Button title="Chart"
                         onPress={this.pressChart.bind(this)}
-                        titleStyle={{ fontWeight: "500", color: "rgba(46, 49, 49, 1)" }}
-                        buttonStyle={{
-                            backgroundColor: "rgba(68, 108, 179, 1)",
-                            width: 305,
-                            height: 45,
-                            borderColor: "rgba(46, 49, 49, 1)",
-                            borderWidth: 1,
-                            borderRadius: 5,
-                            margin: 5
-
-                        }}
-                        containerStyle={{ marginTop: 20 }}/>
+                        titleStyle={styles.btnTitle}
+                        buttonStyle={styles.btnStyle}
+                        containerStyle={{marginTop: 20}}/>
             </View>
         )
     }
@@ -90,7 +53,7 @@ class ChocolateDetails extends React.Component {
     pressChart() {
         const {navigate} = this.props.navigation;
         const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-        navigate('ChocolateChart',MAIN_SCREEN.state.entries);
+        navigate('ChocolateChart', MAIN_SCREEN.state.entries);
     }
 
     pressSearch() {
@@ -123,16 +86,7 @@ class ChocolateDetails extends React.Component {
                     [
                         {
                             text: 'OK', onPress: () => {
-                                AsyncStorage.removeItem("@ChocolateApp:chocolatees")
-
-                                const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-                                MAIN_SCREEN.state.entries = _.filter(MAIN_SCREEN.state.entries, (p) => p.id !== this.entry.id);
-                                MAIN_SCREEN.setState(MAIN_SCREEN.state);
-
-                                AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(MAIN_SCREEN.state.entries)).catch(function (err) {
-                                    console.log(err);
-                                })
-                                navigate('Home')
+                                this.deleteFromLocal()
                             }
                         },
                     ],
@@ -148,45 +102,42 @@ class ChocolateDetails extends React.Component {
     }
 
     saveLocalDelete(entry) {
-        console.log("delete id " + entry.id)
+        console.log("\ndelete id " + entry.id)
         Toast.show('Failed delete item, trying local...', Toast.LONG);
-        const {navigate} = this.props.navigation;
-        const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
-
-        let localDeleted = []
-        let localData = MAIN_SCREEN.state.entries
-
-        console.log("local data delete list size before " + localData.length)
-
 
         AsyncStorage.getItem("@ChocolateApp:chocolateesDeleted").then(function (res) {
-            localDeleted = JSON.parse(res)
-            console.log("Success deleted add size !" + localDeleted.length);
+
+            let localDeleted = _.filter(JSON.parse(res), () => true);
+            localDeleted.push(entry)
+
+            console.log("Success deleted add size !" + localDeleted + " \n" + JSON.parse(res));
+            AsyncStorage.removeItem("@ChocolateApp:chocolateesDeleted")
+
+            console.log("insert deleted " + localDeleted.length)
+            AsyncStorage.setItem("@ChocolateApp:chocolateesDeleted", JSON.stringify(localDeleted)).catch(function (err) {
+                console.log("Failed to set items deleted");
+            })
+
         }).catch(function (err) {
             console.log("Failed to get items from AsyncStorage add deleted");
             console.log(err);
         });
 
-        localData = _.filter(localData, (p) => p.id !== entry.id || p.userId !== entry.userId);
+        this.deleteFromLocal()
+    }
 
-        console.log("local data delete list size" + localData.length)
-        localDeleted.push(entry)
-
-        AsyncStorage.removeItem("@ChocolateApp:chocolateesDeleted")
+    deleteFromLocal() {
         AsyncStorage.removeItem("@ChocolateApp:chocolatees")
 
-        console.log("insert deleted " + localDeleted.length)
-        AsyncStorage.setItem("@ChocolateApp:chocolateesDeleted", JSON.stringify(localDeleted)).catch(function (err) {
-            console.log("Failed to set items deleted");
-        })
+        const MAIN_SCREEN = this.props.navigation.state.params.MAIN_SCREEN;
+        MAIN_SCREEN.state.entries = _.filter(MAIN_SCREEN.state.entries, (p) => p.id != this.entry.id || p.userId != this.entry.userId);
+        MAIN_SCREEN.setState(MAIN_SCREEN.state);
 
-        AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(localData)).catch(function (err) {
+        AsyncStorage.setItem("@ChocolateApp:chocolatees", JSON.stringify(MAIN_SCREEN.state.entries)).catch(function (err) {
             console.log(err);
         })
-
-        MAIN_SCREEN.state.entries = localData
-        MAIN_SCREEN.setState(localData);
-        navigate('Home');
+        const {navigate} = this.props.navigation;
+        navigate('Home')
     }
 
     fetchWithTimeout(url, options = undefined, timeout = 3000) {
@@ -200,17 +151,30 @@ class ChocolateDetails extends React.Component {
 }
 
 const styles = StyleSheet.create({
-    loading: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-        opacity: 0.5,
-        backgroundColor: 'black',
-        justifyContent: 'center',
-        alignItems: 'center'
+    btnTitle: {
+        fontWeight: "700",
+        color: "rgba(46, 49, 49, 1)"
+    },
+    btnStyle: {
+        backgroundColor: "rgba(68, 108, 179, 1)",
+        width: 305,
+        height: 45,
+        borderColor: "rgba(46, 49, 49, 1)",
+        borderWidth: 1,
+        borderRadius: 5,
+        margin: 5,
+        marginTop: 10
+    },
+    btnDelete: {
+        backgroundColor: "rgba(150, 40, 27, 1)",
+        width: 305,
+        height: 45,
+        borderColor: "rgba(46, 49, 49, 1)",
+        borderWidth: 1,
+        borderRadius: 5,
+        margin: 5
     }
+
 })
 
 export default ChocolateDetails;
