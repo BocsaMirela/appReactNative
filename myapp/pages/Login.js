@@ -13,9 +13,17 @@ class Login extends React.Component {
         this.state = {email: '', password: ''}
         AsyncStorage.getItem('token').then(token => {
             if (token) {
-                Object.assign(this.state, {token: token});
-                const {navigate} = this.props.navigation;
-                navigate('Home');
+                // const expiry = jwt.decode(token).exp;
+                // const now = new Date();
+                // let isExpired=now.getTime() > expiry * 1000;
+                let isExpired=false
+                if (!isExpired) {
+                    Object.assign(this.state, {token: token});
+                    const {navigate} = this.props.navigation;
+                    navigate('Home');
+                } else {
+                    Object.assign(this.state, {token: null});
+                }
             } else Object.assign(this.state, {token: null});
         });
     }

@@ -12,6 +12,8 @@
     "expo": "^30.0.1",
     "fetch-awesome": "^2.0.3",
     "fetch-timeout": "0.0.2",
+    "jsonwebtoken": "^8.4.0",
+    "jwt-decode": "^2.2.0",
     "react": "16.3.1",
     "react-native": "https://github.com/expo/react-native/archive/sdk-30.0.0.tar.gz",
     "react-native-cancelable-fetch": "^0.1.1",

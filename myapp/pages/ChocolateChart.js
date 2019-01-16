@@ -22,11 +22,6 @@ class ChocolateChart extends React.Component {
         for (let i = 0; i < this.state.chocolatees.length; i++) {
             days.push(new Date(this.state.chocolatees[i].date).getDay())
         }
-
-        days.push(1)
-        days.push(1)
-        days.push(2)
-
         let sorted = [...new Set(days)]
         sorted = sorted.sort((n1, n2) => (n1 - n2));
 
